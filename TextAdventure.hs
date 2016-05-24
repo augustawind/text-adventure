@@ -11,10 +11,10 @@ import System.IO
 -- ---------------------------------------------------------------------------
 
 data Adventure = End
-               | Do Action Adventure
+               | Do (Action ()) Adventure
                | Prompt String Switch
 
-type Action = StateT Game IO ()
+type Action a = StateT Game IO a
 type Switch = Map.Map String Adventure
 
 data Game = Game
@@ -53,7 +53,7 @@ myAdventure =
         Prompt "Which direction will you take?" $
             Map.fromList [("left", Do goLeft End), ("right", Do goRight End)]
 
-intro :: StateT Game IO ()
+intro :: Action ()
 intro = do
     printLines_ ["You've decided to set out on an adventure."
                 ,"You've left your house and taken the path to a crossroads."]
@@ -65,17 +65,17 @@ intro = do
 
     hr_
 
-goLeft :: StateT Game IO ()
+goLeft :: Action ()
 goLeft = printWrap_ "You went left. You found the treasure! You win!"
 
-goRight :: StateT Game IO ()
+goRight :: Action ()
 goRight = printWrap_ "You went right. A giant boar gores you."
 
 -- Control flow.
 -- ---------------------------------------------------------------------------
 
 -- Run an Adventure.
-run :: Adventure -> StateT Game IO ()
+run :: Adventure -> Action ()
 run End = printWrap "Game over!"
 run (Do action adventure) = action >> run adventure
 run this@(Prompt msg switch) = do
@@ -88,7 +88,7 @@ run this@(Prompt msg switch) = do
 
 -- Same as prompt, but also takes a list of possible choices and
 -- prints them, normalizing the input (see `normalize`).
-cmdPrompt :: [String] -> String -> StateT Game IO String
+cmdPrompt :: [String] -> String -> Action String
 cmdPrompt choices msg = do
     game <- get
     let str = wordWrap width msg ++ ('\n':choicesStr) ++ (' ':promptChars)
@@ -101,11 +101,11 @@ cmdPrompt choices msg = do
         return $ normalize choice
 
 -- @cmdPrompt@ with a blank line added to the end.
-cmdPrompt_ :: [String] -> String -> StateT Game IO String
+cmdPrompt_ :: [String] -> String -> Action String
 cmdPrompt_ cs msg = cmdPrompt cs msg >>= \x -> liftIO blankLine >> return x
 
 -- Print something then prompt for input. 
-prompt :: String -> StateT Game IO String
+prompt :: String -> Action String
 prompt message = do
     game <- get
     let str = wordWrap width message ++ ('\n':promptChars)
@@ -116,19 +116,19 @@ prompt message = do
                 return answer
 
 -- @prompt@ with a blank line added to the end.
-prompt_ :: String -> StateT Game IO String
+prompt_ :: String -> Action String
 prompt_ msg = prompt msg >>= \x -> liftIO blankLine >> return x
 
 
 -- Print a "try again" message and execute a given IO action.
-retry :: StateT Game IO () -> StateT Game IO ()
+retry :: Action () -> Action ()
 retry action = do
     liftIO $ putStrLn "Invalid input. Please try again." >> blankLine
     action 
     return ()
 
 -- Pause execution and wait for a keypress to continue.
-pause :: StateT Game IO ()
+pause :: Action ()
 pause = liftIO $
     putStr "<Press any key to continue...>" >> getChar >> return ()
 
@@ -140,7 +140,7 @@ blankLine :: IO ()
 blankLine = putChar '\n'
 
 -- Print a horizontal rule.
-hr :: StateT Game IO ()
+hr :: Action ()
 hr = do
     game <- get
     let width = getTextWidth game
@@ -148,25 +148,25 @@ hr = do
     liftIO $ putStrLn (replicate width char)
 
 -- @hr@ with a blank line added to the end.
-hr_ :: Action
+hr_ :: Action ()
 hr_ = hr >> liftIO blankLine
 
 -- Print a list of Strings line by line, wrapping each line to the given width.
-printLines :: [String] -> StateT Game IO ()
+printLines :: [String] -> Action ()
 printLines xs = mapM_ printWrap xs
 
 -- @printLines@ with a blank line added to the end.
-printLines_ :: [String] -> StateT Game IO ()
+printLines_ :: [String] -> Action ()
 printLines_ xs = printLines xs >> liftIO blankLine
 
 -- Print a String, wrapping its text to the given width.
-printWrap :: String -> StateT Game IO ()
+printWrap :: String -> Action ()
 printWrap str = do
     game <- get
     liftIO $ putStrLn (wordWrap (getTextWidth game) str)
 
 -- @printWrap@ with a blank line added to the end.
-printWrap_ :: String -> Action
+printWrap_ :: String -> Action ()
 printWrap_ str = printWrap str >> liftIO blankLine
 
 -- String helpers.
