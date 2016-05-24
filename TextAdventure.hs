@@ -52,7 +52,9 @@ intro game = do
 
     hr game
 
-goLeft game = printWrap game "You went left!"
+goLeft game = do 
+    printWrap game "You went left. You found the treasure! You win!"
+
 goRight game = printWrap game "You went right. A giant boar gores you."
 
 -- Control flow.
