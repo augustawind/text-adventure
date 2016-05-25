@@ -1,13 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
 module TemplateString
     ( (-%-)
     , parseTemplate
     ) where
 
-import Control.Monad
+import Control.Monad (foldM)
 import qualified Data.Map as Map
 
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec (Parser, parse, try, lookAhead, eof,
+                                      anyChar, char, string, many, many1,
+                                      noneOf, manyTill, between, (<|>))
 
 -- | @parseTemplate@ as an infix operator.
 infixl 4 -%-
@@ -27,8 +28,9 @@ parseTemplate str vars = foldM f "" (extractPairs str)
               Nothing -> Left $ "Name '" ++ var ++ "' doesn't exist"
               Just name -> Right $ acc ++ plainText ++ name
 
--- Run the @pairs@ parser on a string. OK to throw an error on failure since
--- the @pairs@ parser always succeeds.
+-- Run the @pairs@ parser on a string, returning the value within the
+-- 'Right value. OK to throw an error on 'Left err' since the @pairs@ parser
+-- always succeeds.
 extractPairs :: String -> [(String, String)]
 extractPairs str = either (error . show) id $ parse pairs source str
     where source = "<template string>: " ++ str
