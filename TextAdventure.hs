@@ -7,6 +7,8 @@ import Data.List (intercalate)
 import qualified Data.Map as Map
 import System.IO
 
+import TemplateString ((-%-)) 
+
 -- Game data.
 -- ---------------------------------------------------------------------------
 
@@ -60,7 +62,7 @@ myAdventure =
     Print intro $
         Prompt "name" "What is your name?" $
             Print (Text "Hello, %(name)! Your adventure begins...") $
-                Do (pause >> hr_) $
+                Pause $ Print HR $
                     CmdPrompt "Which direction will you take?" $
                         Map.fromList [("left", Do goLeft End)
                                      ,("right", Do goRight End)]
@@ -114,14 +116,12 @@ run (Do action adventure) = action >> run adventure
 -- | Same as @prompt@, but also takes a list of possible choices and
 -- prints them, normalizing the input with @normalize@.
 cmdPrompt :: [String] -> String -> Action String
-cmdPrompt choices msg = do
+cmdPrompt choices message = do
     game <- get
-    let str = wordWrap width msg ++ ('\n':choicesStr) ++ (' ':promptChars)
-        choicesStr = "(" ++ intercalate ", " choices ++ ")" 
-        width = getTextWidth game
-        promptChars = getPromptChars game
+    printWrap message
     liftIO $ do
-        putStr str
+        let choicesStr = "(" ++ intercalate ", " choices ++ ")" 
+        putStr $ choicesStr ++ (' ' : getPromptChars game)
         choice <- getLine
         return $ normalize choice
 
@@ -133,17 +133,15 @@ cmdPrompt_ cs msg = cmdPrompt cs msg >>= \x -> liftIO blankLine >> return x
 prompt :: String -> Action String
 prompt message = do
     game <- get
-    let str = wordWrap width message ++ ('\n':promptChars)
-        width = getTextWidth game
-        promptChars = getPromptChars game
-    liftIO $ do putStr str
-                answer <- fmap strip getLine
-                return answer
+    printWrap message
+    liftIO $ do
+        putStr $ getPromptChars game
+        answer <- fmap strip getLine
+        return answer
 
 -- | @prompt@ with a blank line added to the end.
 prompt_ :: String -> Action String
 prompt_ msg = prompt msg >>= \x -> liftIO blankLine >> return x
-
 
 -- | Print a "try again" message and re-execute the given @Action@.
 retry :: Action () -> Action ()
@@ -171,7 +169,8 @@ printLines_ xs = printLines xs >> liftIO blankLine
 printWrap :: String -> Action ()
 printWrap str = do
     game <- get
-    liftIO $ putStrLn (wordWrap (getTextWidth game) str)
+    let newStr = either (error . ("Error: "++)) id (str -%- getVars game)
+    liftIO $ putStrLn $ wordWrap (getTextWidth game) newStr
 
 -- | @printWrap@ with a blank line added to the end.
 printWrap_ :: String -> Action ()
