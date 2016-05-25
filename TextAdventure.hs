@@ -12,22 +12,21 @@ import TemplateString ((-%-))
 -- Game data.
 -- ---------------------------------------------------------------------------
 
-data Adventure = End
-               | Print Output Adventure
-               | Prompt String String Adventure
-               | CmdPrompt String Choices
-               | Pause Adventure
-               | Do (Action ()) Adventure
+data Adventure = Node Output Branches
 
-data Output = Text String
-            | Lines [String]
+data Output = Print Message
+            | PrintLines [Message]
+            | Prompt Var Message
             | HR
             | BlankLine
+            | Pause
+            | Sequence [Output]
             deriving (Eq, Show)
 
+type Branches = Map.Map String Adventure
+type Var = String
+type Message = String
 type Action a = StateT Game IO a
-
-type Choices = Map.Map String Adventure
 
 data Game = Game
     { getVars :: Vars
@@ -58,30 +57,25 @@ main :: IO ()
 main = void $ runStateT (run myAdventure) myGame
 
 -- Game:
-
 myGame :: Game
 myGame = defaultGame
 
 -- Adventure:
 myAdventure :: Adventure
 myAdventure =
-    Print intro $
-        Prompt "name" "What is your name?" $
-            Print (Text "Hello, %(name)! Your adventure begins...") $
-                Pause $ Print HR $
-                    CmdPrompt "Which direction will you take?" $
-                        choices [("left", Do goLeft End)
-                                ,("right", Do goRight End)]
+    Node $ Sequence [PrintLines intro,
+                     Prompt "name", "What is your name?",
+                     Print "Hello, %(name)! Your adventure begins...",
+                     Pause, HR] $ choices $
+       [("left",
+            EndNode (Print "You went left. You found the treasure! You win!"))
 
-intro :: Output
-intro = Lines ["You've decided to set out on an adventure."
-              ,"You've left your house and taken the path to a crossroads."]
+       ,("right",
+            EndNode (Print "You went right. A giant boar gores you."))]
 
-goLeft :: Action ()
-goLeft = printWrap_ "You went left. You found the treasure! You win!"
-
-goRight :: Action ()
-goRight = printWrap_ "You went right. A giant boar gores you."
+intro :: [String]
+intro = ["You've decided to set out on an adventure."
+        ,"You've left your house and taken the path to a crossroads."]
 
 -- Control flow.
 -- ---------------------------------------------------------------------------
@@ -108,7 +102,7 @@ run this@(Prompt var msg adventure) = do
            put $ game { getVars = newVars }
            run adventure
 
-run this@(CmdPrompt msg switch) = do
+run this@(Node output switch) = do
     let switch' = Map.mapKeys normalize switch
     choice <- cmdPrompt_ (Map.keys switch') msg
     case Map.lookup choice switch' of
