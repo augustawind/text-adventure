@@ -1,10 +1,10 @@
 module TextAdventure
     -- | Data types.
     ( GameAction
-    , GameState
-    , Adventure
+    , GameState(..)
+    , Adventure(..)
     , Branches
-    , Output
+    , Output(..)
     , Vars
     -- | Type constructors.
     , branches
@@ -40,7 +40,7 @@ import System.IO
 
 import TemplateString ((-%-)) 
 
--- GameState data.
+-- Game data.
 -- ---------------------------------------------------------------------------
 
 type GameAction a = StateT GameState IO a
@@ -85,39 +85,6 @@ defaultGameState = GameState
     , getTextWidth = 78
     , getLineChar = '-'
     }
-
--- Example usage.
--- ---------------------------------------------------------------------------
-
-main :: IO ()
-main = run myAdventure myGameState
-
--- GameState:
-myGameState :: GameState
-myGameState = defaultGameState
-
--- Adventure:
-myAdventure :: Adventure
-myAdventure =
-    Node (Sequence [PrintLines intro
-                   ,Prompt "name" "What is your name?"
-                   ,Print "Hello, %(name)! Your adventure begins..."
-                   ,Pause
-                   ,HR
-                   ,Print "Which direction will you go?"
-                   ])
-         $branches$
-             [("left",
-                 Node (Print "You went left. You found the treasure! You win!")
-                      gameOver)
-             ,("right",
-                 Node (Print "You went right. A giant boar gores you. You die.")
-                      gameOver)
-             ]
-
-intro :: [String]
-intro = ["You've decided to set out on an adventure."
-        ,"You've left your house and taken the path to a crossroads."]
 
 -- Control flow.
 -- ---------------------------------------------------------------------------
