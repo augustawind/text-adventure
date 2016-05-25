@@ -15,7 +15,7 @@ import TemplateString ((-%-))
 data Adventure = End
                | Print Output Adventure
                | Prompt String String Adventure
-               | CmdPrompt String (Map.Map String Adventure)
+               | CmdPrompt String Choices
                | Pause Adventure
                | Do (Action ()) Adventure
 
@@ -27,6 +27,8 @@ data Output = Text String
 
 type Action a = StateT Game IO a
 
+type Choices = Map.Map String Adventure
+
 data Game = Game
     { getVars :: Vars
     , getPromptChars :: String
@@ -35,6 +37,10 @@ data Game = Game
     } deriving (Show, Read, Eq)
 
 type Vars = Map.Map String String
+
+-- | Semantic alias for Map.fromList.
+choices :: [(String, Adventure)] -> Choices
+choices = Map.fromList
 
 -- | Default game state.
 defaultGame :: Game
@@ -64,8 +70,8 @@ myAdventure =
             Print (Text "Hello, %(name)! Your adventure begins...") $
                 Pause $ Print HR $
                     CmdPrompt "Which direction will you take?" $
-                        Map.fromList [("left", Do goLeft End)
-                                     ,("right", Do goRight End)]
+                        choices [("left", Do goLeft End)
+                                ,("right", Do goRight End)]
 
 intro :: Output
 intro = Lines ["You've decided to set out on an adventure."
@@ -194,12 +200,6 @@ blankLine = putChar '\n'
 
 -- String helpers.
 -- ---------------------------------------------------------------------------
-
-fromTemplate :: String -> Map.Map String String -> String
-fromTemplate "" _ = ""
-fromTemplate str vars
-  | Map.null vars = str
-  | otherwise = undefined
 
 -- Wrap a String to fit the given width, adding line breaks as necessary.
 -- This removes all pre-existing line breaks.
