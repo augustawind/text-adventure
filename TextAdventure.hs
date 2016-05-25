@@ -38,8 +38,7 @@ import Data.List (intercalate)
 import qualified Data.Map as Map
 import System.IO
 
-import TemplateString ((-%-)) 
-
+import StringFormat (format)
 
 --------------------------------------------------------------------------------
 --  Game data.
@@ -199,7 +198,9 @@ printLines_ xs = printLines xs >> liftIO blankLine
 printWrap :: String -> GameAction ()
 printWrap str = do
     game <- get
-    let newStr = either (error . ("Error: "++)) id (str -%- getVars game)
+    let newStr = either doError id formatted
+        formatted = format str (getVars game)
+        doError = error . ("Error: "++)
     liftIO $ putStrLn $ wordWrap (getTextWidth game) newStr
 
 -- | @printWrap@ with a blank line added to the end.

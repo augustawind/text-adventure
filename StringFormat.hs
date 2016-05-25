@@ -1,6 +1,6 @@
-module TemplateString
+module StringFormat
     ( (-%-)
-    , parseTemplate
+    , format
     ) where
 
 import Control.Monad (foldM)
@@ -10,17 +10,17 @@ import Text.ParserCombinators.Parsec (Parser, parse, try, lookAhead, eof,
                                       anyChar, char, string, many, many1,
                                       noneOf, manyTill, between, (<|>))
 
--- | @parseTemplate@ as an infix operator.
+-- | @format@ as an infix operator.
 infixl 4 -%-
 (-%-) :: String -> Map.Map String String -> Either String String
-str -%- vars = parseTemplate str vars
+str -%- vars = format str vars
 
 -- | Parse a template string, replacing each variable (denoted by "%(var)")
 -- with a corresponding value in the given Map. Returns 'Left err' if
 -- a name doesn't exist in the Map.
-parseTemplate :: String -> Map.Map String String -> Either String String
-parseTemplate ""  _    = Right ""
-parseTemplate str vars = foldM f "" (extractPairs str) 
+format :: String -> Map.Map String String -> Either String String
+format ""  _    = Right ""
+format str vars = foldM f "" (extractPairs str) 
     where
         f acc (plainText, "") = Right $ acc ++ plainText
         f acc (plainText, var) =
