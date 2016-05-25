@@ -1,6 +1,37 @@
-module TextAdventure where
+module TextAdventure
+    -- | Data types.
+    ( GameAction
+    , GameState
+    , Adventure
+    , Branches
+    , Output
+    , Vars
+    -- | Type constructors.
+    , branches
+    , gameOver
+    , defaultGameState
+    -- | Game runners.
+    , run
+    , play
+    -- | Control flow.
+    , dispatch
+    , toAction
+    , runPrompt
+    , cmdPrompt, cmdPrompt_
+    , prompt, prompt_
+    , pause, pause_
+    , retry
+    -- | Output
+    , printLines, printLines_
+    , printWrap, printWrap_
+    , hr, hr_, blankLine
+    -- | String manipulation.
+    , wordWrap
+    , normalize
+    , strip
+    ) where
 
-import Control.Monad (mapM_, void)
+import Control.Monad (mapM, mapM_, sequence_, void)
 import Control.Monad.State
 import Data.Char (toLower)
 import Data.List (intercalate)
@@ -24,7 +55,7 @@ data GameState = GameState
 data Adventure = Node Output Branches
     deriving (Show, Eq)
 
-type Branches = Map.Map Message Adventure
+type Branches = Map.Map String Adventure
 
 data Output = Print String 
             | PrintLines [String]
@@ -43,7 +74,7 @@ branches :: [(String, Adventure)] -> Branches
 branches = Map.fromList
 
 -- | Semantic alias for Map.empty. Used to end the game on a particular @Node@.
-gameOver :: [(String, Adventure)] -> Branches
+gameOver :: Branches
 gameOver = Map.empty
 
 -- | Default game state.
@@ -59,7 +90,7 @@ defaultGameState = GameState
 -- ---------------------------------------------------------------------------
 
 main :: IO ()
-main = void $ runStateT (run myAdventure) myGameState
+main = run myAdventure myGameState
 
 -- GameState:
 myGameState :: GameState
@@ -68,15 +99,21 @@ myGameState = defaultGameState
 -- Adventure:
 myAdventure :: Adventure
 myAdventure =
-    Node $ Sequence [PrintLines intro,
-                     Prompt "name", "What is your name?",
-                     Print "Hello, %(name)! Your adventure begins...",
-                     Pause, HR] $ branches $
-       [("left",
-            Node (Print "You went left. You found the treasure! You win!") gameOver)
-
-       ,("right",
-            Node (Print "You went right. A giant boar gores you.") gameOver)]
+    Node (Sequence [PrintLines intro
+                   ,Prompt "name" "What is your name?"
+                   ,Print "Hello, %(name)! Your adventure begins..."
+                   ,Pause
+                   ,HR
+                   ,Print "Which direction will you go?"
+                   ])
+         $branches$
+             [("left",
+                 Node (Print "You went left. You found the treasure! You win!")
+                      gameOver)
+             ,("right",
+                 Node (Print "You went right. A giant boar gores you. You die.")
+                      gameOver)
+             ]
 
 intro :: [String]
 intro = ["You've decided to set out on an adventure."
@@ -85,49 +122,61 @@ intro = ["You've decided to set out on an adventure."
 -- Control flow.
 -- ---------------------------------------------------------------------------
 
--- | Run an Adventure.
-run :: Adventure -> GameAction ()
-run (Node output paths) = action >> next
-    where
-        action = case output of
-                   Print str -> printWrap_ str
-                   PrintLines strs -> printLines_ strs
-                   Prompt var str -> runPrompt var str
-                   HR -> hr_
-                   BlankLine -> liftIO blankLine
-                   Pause -> pause
-                   Sequence outputs = sequence_ outputs
-        next = if Map.empty paths
-                  then return ()
-                  else chooseBranch paths
+-- | Run a game, given an @Adventure@ and a @GameState@.
+run :: Adventure -> GameState -> IO ()
+run adventure gameState = void $ runStateT (play adventure) gameState
 
+-- | Convert an @Adventure@ to a @GameAction@.
+play :: Adventure -> GameAction ()
+play (Node output paths) = toAction output >> next
+    where
+        next = if Map.null paths
+                  then printGameOver 
+                  else dispatch paths
+
+-- | Given a @Branches@ Map, prompt for an answer and then @play@ the
+-- corresponding @Adventure@ branch. Retry on invalid input.
+dispatch :: Branches -> GameAction ()
+dispatch paths = do
+    let paths' = Map.mapKeys normalize paths
+    choice <- cmdPrompt_ (Map.keys paths')
+    case Map.lookup choice paths' of
+      Nothing        -> retry (dispatch paths)
+      Just adventure -> play adventure
+
+-- Print a game over message.
+printGameOver :: GameAction ()
+printGameOver = printWrap_ "Game over!"
+
+-- | Convert an @Output@ to a @GameAction@.
+toAction :: Output -> GameAction ()
+toAction output = case output of
+                    Print str -> printWrap_ str
+                    PrintLines strs -> printLines_ strs
+                    Prompt var str -> runPrompt var str
+                    HR -> hr_
+                    BlankLine -> liftIO blankLine
+                    Pause -> pause
+                    Sequence outputs -> mapM_ toAction outputs
+
+-- | Given a variable name and a message, print the message and then @prompt@
+-- for an answer, updating the @getVars@ attribute of the current @GameState@
+-- with the result. Retry when no input is given.
 runPrompt :: Var -> String -> GameAction ()
 runPrompt var str = do
     answer <- prompt_ str
     if null answer
-       then runPrompt var str
+       then retry $ runPrompt var str
        else do
            game <- get
            let newVars = Map.insert var answer $ getVars game
            put $ game { getVars = newVars }
 
-run this@(Node output switch) = do
-    let switch' = Map.mapKeys normalize switch
-    choice <- cmdPrompt_ (Map.keys switch') msg
-    case Map.lookup choice switch' of
-      Nothing        -> retry (run this)
-      Just adventure -> run adventure
-
-run (Pause adventure) = pause >> run adventure
-
-run (Do action adventure) = action >> run adventure
-
--- | Same as @prompt@, but also takes a list of possible choices and
--- prints them, normalizing the input with @normalize@.
-cmdPrompt :: [String] -> String -> GameAction String
-cmdPrompt choices message = do
+-- | Like @prompt@, but prints a given list of possible choices and prints
+-- them, then prompts for a result, normalizing the input with @normalize@.
+cmdPrompt :: [String] -> GameAction String
+cmdPrompt choices = do
     game <- get
-    printWrap message
     liftIO $ do
         let choicesStr = "(" ++ intercalate ", " choices ++ ")" 
         putStr $ choicesStr ++ (' ' : getPromptChars game)
@@ -135,8 +184,8 @@ cmdPrompt choices message = do
         return $ normalize choice
 
 -- | @cmdPrompt@ with a blank line added to the end.
-cmdPrompt_ :: [String] -> String -> GameAction String
-cmdPrompt_ cs msg = cmdPrompt cs msg >>= \x -> liftIO blankLine >> return x
+cmdPrompt_ :: [String] -> GameAction String
+cmdPrompt_ cs = cmdPrompt cs >>= \x -> liftIO blankLine >> return x
 
 -- | Print something then prompt for input.
 prompt :: String -> GameAction String
@@ -162,6 +211,10 @@ retry action = do
 pause :: GameAction ()
 pause = liftIO $
     putStr "(Press <Enter> to continue...)" >> void getLine
+
+-- | @pause@ with a blank line added to the end.
+pause_ :: GameAction ()
+pause_ = pause >> liftIO blankLine
 
 -- Output.
 -- ---------------------------------------------------------------------------
