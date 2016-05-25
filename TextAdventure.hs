@@ -3,11 +3,11 @@ module TextAdventure
     ( GameAction
     , GameState(..)
     , Adventure(..)
-    , Branches
+    , Dispatcher
     , Output(..)
     , Vars
     -- | Type constructors.
-    , branches
+    , dispatcher
     , gameOver
     , defaultGameState
     -- | Game runners.
@@ -52,10 +52,10 @@ data GameState = GameState
     , getLineChar :: Char
     } deriving (Show, Eq)
 
-data Adventure = Node Output Branches
+data Adventure = Node Output Dispatcher
     deriving (Show, Eq)
 
-type Branches = Map.Map String Adventure
+type Dispatcher = Map.Map String Adventure
 
 data Output = Print String 
             | PrintLines [String]
@@ -70,11 +70,11 @@ type Vars = Map.Map Var String
 type Var = String
 
 -- | Semantic alias for Map.fromList.
-branches :: [(String, Adventure)] -> Branches
-branches = Map.fromList
+dispatcher :: [(String, Adventure)] -> Dispatcher
+dispatcher = Map.fromList
 
 -- | Semantic alias for Map.empty. Used to end the game on a particular @Node@.
-gameOver :: Branches
+gameOver :: Dispatcher
 gameOver = Map.empty
 
 -- | Default game state.
@@ -101,9 +101,9 @@ play (Node output paths) = toAction output >> next
                   then printGameOver 
                   else dispatch paths
 
--- | Given a @Branches@ Map, prompt for an answer and then @play@ the
--- corresponding @Adventure@ branch. Retry on invalid input.
-dispatch :: Branches -> GameAction ()
+-- | Given a @Dispatcher@ Map, prompt for an answer and then @play@ the
+-- corresponding @Adventure@. Retry on invalid input.
+dispatch :: Dispatcher -> GameAction ()
 dispatch paths = do
     let paths' = Map.mapKeys normalize paths
     choice <- cmdPrompt_ (Map.keys paths')

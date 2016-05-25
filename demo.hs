@@ -17,7 +17,7 @@ myAdventure =
                    ,HR
                    ,Print "Which direction will you go?"
                    ])
-         $branches$
+         $dispatcher$
              [("left",
                  Node (Print "You went left. You found the treasure! You win!")
                       gameOver)
