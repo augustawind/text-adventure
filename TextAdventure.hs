@@ -40,8 +40,9 @@ import System.IO
 
 import TemplateString ((-%-)) 
 
--- Game data.
--- ---------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+--  Game data.
 
 type GameAction a = StateT GameState IO a
 
@@ -86,8 +87,8 @@ defaultGameState = GameState
     , getLineChar = '-'
     }
 
--- Control flow.
--- ---------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--  Control flow.
 
 -- | Run a game, given an @Adventure@ and a @GameState@.
 run :: Adventure -> GameState -> IO ()
@@ -183,8 +184,8 @@ pause = liftIO $
 pause_ :: GameAction ()
 pause_ = pause >> liftIO blankLine
 
--- Output.
--- ---------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--  Output.
 
 -- | Print a list of Strings line by line, wrapping each line to the given width.
 printLines :: [String] -> GameAction ()
@@ -221,8 +222,8 @@ hr_ = hr >> liftIO blankLine
 blankLine :: IO ()
 blankLine = putChar '\n'
 
--- String helpers.
--- ---------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--  String manipulation.
 
 -- Wrap a String to fit the given width, adding line breaks as necessary.
 -- This removes all pre-existing line breaks.
