@@ -4,7 +4,7 @@ import Control.Monad (mapM_)
 import Data.List (intercalate)
 import qualified Data.Map as Map
 
-import TextAdventure
+import TextAdventure (Adventure(..), Output(..), wordWrap)
 
 visualize :: Adventure -> IO ()
 visualize = mapM_ putStrLn . lines . showAdventure 0 

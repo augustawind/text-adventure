@@ -21,11 +21,11 @@ module TextAdventure
     , prompt, prompt_
     , pause, pause_
     , retry
-    -- | Output
+    -- | Output.
     , printLines, printLines_
     , printWrap, printWrap_
     , hr, hr_, blankLine
-    -- | String manipulation.
+    -- | String utilities.
     , wordWrap
     , normalize
     , strip
