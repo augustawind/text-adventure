@@ -242,10 +242,9 @@ smartLineBreak :: Int -> String -> (String, String)
 smartLineBreak width str = (first, rest)
     where 
         first =
-            takeWhile (not . isWhitespace) $ 
-                case (reverse . dropWhile (not . isWhitespace) . reverse) chunk of
-                    ""   -> chunk
-                    str' -> str'
+            case (reverse . dropWhile (not . isWhitespace) . reverse) chunk of
+                ""   -> chunk
+                str' -> str'
         rest = dropWhile isWhitespace . drop (length first) $ str
         chunk = take width str
 
