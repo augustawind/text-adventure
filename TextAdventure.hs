@@ -53,7 +53,7 @@ data GameState = GameState
     } deriving (Show, Eq)
 
 data Adventure = Node Output Dispatcher
-    deriving (Show, Eq)
+    deriving (Show, Read, Eq)
 
 type Dispatcher = Map.Map String Adventure
 
@@ -64,7 +64,7 @@ data Output = Print String
             | BlankLine
             | Pause
             | Sequence [Output]
-            deriving (Show, Eq)
+            deriving (Show, Read, Eq)
 
 type Vars = Map.Map Var String
 type Var = String
