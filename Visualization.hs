@@ -11,28 +11,30 @@ visualize = mapM_ putStrLn . lines . showAdventure 0
 
 showAdventure :: Int -> Adventure -> String
 showAdventure indentLevel (Node output disp)
-  | Map.null disp = indentOutput output
-  | otherwise     = indentOutput output ++ Map.foldlWithKey showDispatch "" disp
-  where
-      indentOutput :: Output -> String
-      indentOutput = intercalate "\n" . map (indent ++) . lines . wrapLines
-      wrapLines :: Output -> String
-      wrapLines = concatMap (wordWrap (78 - indentLevel)) . showOutput
-      showOutput :: Output -> [String]
-      showOutput o = case o of
-                        Sequence xs -> concatMap showOutput xs
-                        _ -> case o of
-                                       Print str -> [str]
-                                       PrintLines xs -> [intercalate " " xs]
-                                       _ -> [show o]
-      showDispatch acc choice node =
-          acc ++
-              "\n" ++ newIndent ++ showChoice choice ++
-              "\n" ++ showAdventure newIndentLevel node
-      showChoice choice = "|--> " ++ choice
-      indent = replicate indentLevel ' '
-      newIndent = replicate newIndentLevel ' '
-      newIndentLevel = indentLevel + 4
+    | Map.null disp = indentOutput indentLevel output
+    | otherwise     = indentOutput indentLevel output ++
+                        Map.foldlWithKey foldingFunction "" disp
+    where
+       foldingFunction result nodeName node =
+           result ++
+               "\n" ++ newIndentStr ++ showNodeName nodeName ++
+               "\n" ++ showAdventure newIndentLevel node
+       showNodeName name = "|--> " ++ name
+       newIndentLevel = indentLevel + 4
+       newIndentStr = replicate newIndentLevel ' '
+
+indentOutput :: Int -> Output -> String
+indentOutput indentLevel =
+        intercalate "\n" . map (indentStr ++) . lines . wrapLines
+    where
+        wrapLines = intercalate "\n" . map wrapIndented . showOutput
+        wrapIndented = wordWrap (78 - indentLevel)
+        indentStr = replicate indentLevel ' '
+
+showOutput :: Output -> [String]
+showOutput o = case o of
+                  Sequence xs   -> concatMap showOutput xs
+                  _             -> [show o]
 
 -- Adventure:
 myAdventure :: Adventure
