@@ -25,10 +25,6 @@ module TextAdventure
     , printLines, printLines_
     , printWrap, printWrap_
     , hr, hr_, blankLine
-    -- | String utilities.
-    , wordWrap
-    , normalize
-    , strip, lstrip, rstrip
     ) where
 
 import Control.Monad (void)
@@ -37,7 +33,7 @@ import Data.List (intercalate)
 import qualified Data.Map as Map
 
 import TemplateString (format)
-import StringUtils (wordWrap, normalize, strip, lstrip, rstrip)
+import StringUtils (wordWrap, normalize, strip)
 
 --------------------------------------------------------------------------------
 --  Game data.
