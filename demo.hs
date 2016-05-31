@@ -5,12 +5,13 @@ main = run myAdventure myGameState
 
 -- Game state:
 myGameState :: GameState
-myGameState = defaultGameState
+myGameState = defaultGameState { getLineChar = '~' }
 
 -- Adventure:
 myAdventure :: Adventure
 myAdventure =
-    Node [PrintLines intro
+    Node [PrintLines ["You've decided to set out on an adventure."
+                     ,"You've left your house and taken the path to a crossroads."]
          ,Prompt "name" [] "What is your name?"
          ,Print "Hello, %(name)! Your adventure begins..."
          ,Pause
