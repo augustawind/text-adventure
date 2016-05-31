@@ -20,11 +20,13 @@ myAdventure =
          ,Print "Hello, %(name)! Your adventure begins..."
          ,Pause
          ,HR]
+
     $ ask "Which direction will you go?" $
 
         [("left",
            Node [PrintLines ["You went left."
                             ,"You see a strange object."]]
+
            $ ask "Do you pick it up?" $
 
                [("yes",
@@ -32,7 +34,6 @@ myAdventure =
                                 "attain enlightenment. You win!")]
                    gameOver
                 )
-
                ,("no",
                    Node [Print ("Your skepticism precedes you. " ++
                                 "You turn to leave the object behind " ++
@@ -42,7 +43,6 @@ myAdventure =
 
                        [("yes",
                            Node [Print "You found the treasure! You win!"] gameOver)
-
                        ,("no",
                            Node [PrintLines ["You have denied too many opportunities!"
                                             ,"You are being punished for your ungratefulness."
@@ -51,7 +51,6 @@ myAdventure =
                         )]
                 )]
          )
-
         ,("right",
            Node [Print "You went right."
                 ,Prompt "lastWords" ["help", "fuck"] "Any last words?"
