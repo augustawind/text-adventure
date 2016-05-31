@@ -136,7 +136,7 @@ toAction output = case output of
                     PrintLines strs -> printLines_ strs
                     Prompt var choices str -> runPrompt var choices str
                     HR -> hr_
-                    BlankLine -> liftIO blankLine
+                    BlankLine -> blankLine
                     Pause -> pause
 
 -- | Given a variable name, a list of choices, and a message, print the message
@@ -170,7 +170,7 @@ cmdPrompt choices = do
 
 -- | @cmdPrompt@ with a blank line added to the end.
 cmdPrompt_ :: [String] -> GameAction String
-cmdPrompt_ cs = cmdPrompt cs >>= \x -> liftIO blankLine >> return x
+cmdPrompt_ cs = cmdPrompt cs >>= \x -> blankLine >> return x
 
 -- | Print something then prompt for input.
 prompt :: String -> GameAction String
@@ -184,22 +184,21 @@ prompt message = do
 
 -- | @prompt@ with a blank line added to the end.
 prompt_ :: String -> GameAction String
-prompt_ msg = prompt msg >>= \x -> liftIO blankLine >> return x
+prompt_ msg = prompt msg >>= \x -> blankLine >> return x
 
 -- | Print a "try again" message and re-execute the given @GameAction@.
 retry :: GameAction () -> GameAction ()
 retry action = do
-    liftIO $ putStrLn "Invalid input. Please try again." >> blankLine
-    action 
+    liftIO $ putStrLn "Invalid input. Please try again." 
+    blankLine >> action 
 
 -- | Pause execution and wait for a keypress to continue.
 pause :: GameAction ()
-pause = liftIO $
-    putStr "(Press <Enter> to continue...)" >> void getLine
+pause = liftIO $ putStr "(Press <Enter> to continue...)" >> void getLine
 
 -- | @pause@ with a blank line added to the end.
 pause_ :: GameAction ()
-pause_ = pause >> liftIO blankLine
+pause_ = pause >> blankLine
 
 --------------------------------------------------------------------------------
 --  Output.
@@ -210,7 +209,7 @@ printLines xs = mapM_ printWrap xs
 
 -- @printLines@ with a blank line added to the end.
 printLines_ :: [String] -> GameAction ()
-printLines_ xs = printLines xs >> liftIO blankLine
+printLines_ xs = printLines xs >> blankLine
 
 -- | Print a String, wrapping its text to the given width.
 printWrap :: String -> GameAction ()
@@ -219,11 +218,11 @@ printWrap str = do
     let newStr = either doError id formatted
         formatted = format str (getVars game)
         doError = error . ("Error: "++)
-    liftIO $ putStrLn $ wordWrap (getTextWidth game) newStr
+    liftIO . putStrLn . wordWrap (getTextWidth game) $ newStr
 
 -- | @printWrap@ with a blank line added to the end.
 printWrap_ :: String -> GameAction ()
-printWrap_ str = printWrap str >> liftIO blankLine
+printWrap_ str = printWrap str >> blankLine
 
 -- | Print a horizontal rule.
 hr :: GameAction ()
@@ -235,8 +234,8 @@ hr = do
 
 -- | @hr@ with a blank line added to the end.
 hr_ :: GameAction ()
-hr_ = hr >> liftIO blankLine
+hr_ = hr >> blankLine
 
 -- | Print a blank line.
-blankLine :: IO ()
-blankLine = putChar '\n'
+blankLine :: GameAction ()
+blankLine = liftIO $ putChar '\n'
