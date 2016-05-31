@@ -11,7 +11,7 @@ myGameState = defaultGameState
 myAdventure :: Adventure
 myAdventure =
     Node [PrintLines intro
-         ,Prompt "name" "What is your name?"
+         ,Prompt "name" [] "What is your name?"
          ,Print "Hello, %(name)! Your adventure begins..."
          ,Pause
          ,HR
@@ -47,10 +47,11 @@ wentLeft = Node [PrintLines ["You went left."
                     ]
 
 wentRight :: Adventure
-wentRight = Node [PrintLines ["You went right."
-                             ,"A giant boar gores you."
-                             ,"You lose!"
-                             ]]
+wentRight = Node [Print "You went right."
+                 ,Prompt "lastWords" ["help", "fuck"] "Any last words?"
+                 ,PrintLines ["A giant boar gores you."
+                             ,"Before you die, you say \"%(lastWords)\"."
+                             ,"You lose!"]]
                  gameOver
 
 openedChest :: Adventure

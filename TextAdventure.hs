@@ -73,7 +73,7 @@ type Dispatcher = Map.Map String Adventure
 -- or pausing the game.
 data Output = Print String 
             | PrintLines [String]
-            | Prompt Var String
+            | Prompt Var [String] String
             | HR
             | BlankLine
             | Pause
@@ -135,7 +135,7 @@ toAction :: Output -> GameAction ()
 toAction output = case output of
                     Print str -> printWrap_ str
                     PrintLines strs -> printLines_ strs
-                    Prompt var str -> runPrompt var str
+                    Prompt var choices str -> runPrompt var choices str
                     HR -> hr_
                     BlankLine -> liftIO blankLine
                     Pause -> pause
@@ -143,11 +143,14 @@ toAction output = case output of
 -- | Given a variable name and a message, print the message and then @prompt@
 -- for an answer, updating the @getVars@ attribute of the current @GameState@
 -- with the result. Retry when no input is given.
-runPrompt :: Var -> String -> GameAction ()
-runPrompt var str = do
-    answer <- prompt_ str
-    if null answer
-       then retry $ runPrompt var str
+runPrompt :: Var -> [String] -> String -> GameAction ()
+runPrompt var choices str = do
+    answer <- if null choices
+                then prompt_ str
+                else printWrap str >> cmdPrompt_ choices
+
+    if null answer || (not (null choices) && not (answer `elem` choices))
+       then retry $ runPrompt var choices str
        else do
            game <- get
            let newVars = Map.insert var answer $ getVars game
