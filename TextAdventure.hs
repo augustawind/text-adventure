@@ -52,7 +52,7 @@ data GameState = GameState
     , getLineChar :: Char
     } deriving (Show, Eq)
 
-data Adventure = Node Output Dispatcher
+data Adventure = Node [Output] Dispatcher
     deriving (Show, Read, Eq)
 
 type Dispatcher = Map.Map String Adventure
@@ -63,7 +63,6 @@ data Output = Print String
             | HR
             | BlankLine
             | Pause
-            | Sequence [Output]
             deriving (Show, Read, Eq)
 
 type Vars = Map.Map Var String
@@ -95,7 +94,7 @@ run adventure gameState = void $ runStateT (play adventure) gameState
 
 -- | Convert an @Adventure@ to a @GameAction@.
 play :: Adventure -> GameAction ()
-play (Node output paths) = toAction output >> next
+play (Node outputs paths) = mapM_ toAction outputs >> next
     where
         next = if Map.null paths
                   then printGameOver 
@@ -124,7 +123,6 @@ toAction output = case output of
                     HR -> hr_
                     BlankLine -> liftIO blankLine
                     Pause -> pause
-                    Sequence outputs -> mapM_ toAction outputs
 
 -- | Given a variable name and a message, print the message and then @prompt@
 -- for an answer, updating the @getVars@ attribute of the current @GameState@
