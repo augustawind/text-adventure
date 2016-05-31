@@ -204,9 +204,9 @@ printLines_ xs = printLines xs >> blankLine
 printWrap :: String -> GameAction ()
 printWrap str = do
     game <- get
-    let newStr = either doError id formatted
-        formatted = format str (getVars game)
-        doError = error . ("Error: "++)
+    let eitherStr = format str (getVars game)
+        errorFunc e = error $ "Error: " ++ e
+        newStr = either errorFunc id eitherStr
     liftIO . putStrLn . wordWrap (getTextWidth game) $ newStr
 
 -- | @printWrap@ with a blank line added to the end.
