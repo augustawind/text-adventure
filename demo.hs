@@ -30,14 +30,14 @@ myAdventure =
            $ ask "Do you pick it up?" $
 
                [("yes",
-                   Node [Print ("You pick it up and instantly " ++
-                                "attain enlightenment. You win!")]
+                   Node [Print ("You pick it up and instantly \ 
+                                \attain enlightenment. You win!")]
                    gameOver
                 )
                ,("no",
-                   Node [Print ("Your skepticism precedes you. " ++
-                                "You turn to leave the object behind " ++
-                                "and you see a treasure chest apparate out of thin air.")]
+                   Node [Print ("Your skepticism precedes you. \
+                                \You turn to leave the object behind \
+                                \and you see a treasure chest apparate out of thin air.")]
 
                    $ ask "Do you wish to open it?" $
 
