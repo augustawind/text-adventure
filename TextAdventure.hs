@@ -43,20 +43,34 @@ import StringUtils (wordWrap, normalize, strip)
 --------------------------------------------------------------------------------
 --  Game data.
 
+-- | A GameAction performs IO with some associated @GameState@.
 type GameAction a = StateT GameState IO a
 
+-- | A record of the current game state.
 data GameState = GameState
+    -- | A @Data.Map.Map@ of game variables. Used by the user to
+    -- store game state.
     { getVars :: Vars
+    -- | The current prompt characters, such as ">> ".
     , getPromptChars :: String
+    -- | The current text width to wrap to. This is unlikely to change.
     , getTextWidth :: Int
+    -- | The current line character. Used for drawing a horizontal rule with @HR@.
     , getLineChar :: Char
     } deriving (Show, Eq)
 
+-- | An adventure game.
+-- This is a recursive tree structure where each Node has an arbitrary amount
+-- of branches corresponding with each path the game can take at that point.
+-- The Node itself represents a series of @Output@s as a list.
 data Adventure = Node [Output] Dispatcher
     deriving (Show, Read, Eq)
 
+-- | Type alias for a Map of choices to @Adventure@s. See @Adventure@.
 type Dispatcher = Map.Map String Adventure
 
+-- | Represents game output, such as printing a string, prompting for an answer,
+-- or pausing the game.
 data Output = Print String 
             | PrintLines [String]
             | Prompt Var String
@@ -65,7 +79,9 @@ data Output = Print String
             | Pause
             deriving (Show, Read, Eq)
 
+-- | Semantic alias representing the game variables. See @GameState@.
 type Vars = Map.Map Var String
+-- | Semantic alias for a variable name.
 type Var = String
 
 -- | Semantic alias for Map.fromList.
