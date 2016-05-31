@@ -32,7 +32,7 @@ module TextAdventure
     ) where
 
 import Control.Monad (void)
-import Control.Monad.State
+import Control.Monad.State (StateT, runStateT, liftIO, get, put)
 import Data.List (intercalate)
 import qualified Data.Map as Map
 
