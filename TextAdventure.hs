@@ -10,7 +10,7 @@ module TextAdventure
     , dispatcher
     , gameOver
     , defaultGameState
-    -- | Game runners.
+    -- | Execution.
     , run
     , play
     -- | Control flow.
@@ -31,11 +31,10 @@ module TextAdventure
     , strip
     ) where
 
-import Control.Monad (mapM, mapM_, sequence_, void)
+import Control.Monad (void)
 import Control.Monad.State
 import Data.List (intercalate)
 import qualified Data.Map as Map
-import System.IO
 
 import TemplateString (format)
 import StringUtils (wordWrap, normalize, strip)
