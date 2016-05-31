@@ -20,7 +20,7 @@ str -%- vars = format str vars
 -- a name doesn't exist in the Map.
 format :: String -> Map.Map String String -> Either String String
 format ""  _    = Right ""
-format str vars = foldM f "" (extractPairs str) 
+format str vars = foldM f "" (parseTemplate str) 
     where
         f acc (plainText, "") = Right $ acc ++ plainText
         f acc (plainText, var) =
@@ -31,19 +31,20 @@ format str vars = foldM f "" (extractPairs str)
 -- Run the @pairs@ parser on a string, returning the value within the
 -- 'Right value. OK to throw an error on 'Left err' since the @pairs@ parser
 -- always succeeds.
-extractPairs :: String -> [(String, String)]
-extractPairs str = either (error . show) id $ parse pairs source str
+parseTemplate :: String -> [(String, String)]
+parseTemplate str = either (error . show) id $ parse templatePairs source str
     where source = "<template string>: " ++ str
 
--- Parse each @pair@ of (plain text, template var) into a list of 2-tuples.
-pairs :: Parser [(String, String)]
-pairs = pair `manyTill` eof
+-- Parse a String into its @templatePair@s, returning list of 2-tuples.
+-- This parser will never fail.
+templatePairs :: Parser [(String, String)]
+templatePairs = templatePair `manyTill` eof
 
 -- Parse a @templateVar@, and return the text leading it up to it and the
 -- @templateVar@ with its template formatting stripped, in a 2-tuple.
-pair :: Parser (String, String)
-pair = try ((,) <$> anythingBut templateVar <*> templateVar) <|>
-           ((,) <$> many anyChar <*> string "")
+templatePair :: Parser (String, String)
+templatePair = try ((,) <$> anythingBut templateVar <*> try templateVar) <|>
+                   ((,) <$> many anyChar <*> string "")
 
 -- Parse a template variable, in the format "%(myTemplateVar)". Returns
 -- the text between the parentheses.
@@ -53,7 +54,7 @@ templateVar = char '%' *> anyBetweenChars '(' ')'
 -- Parse anything that is not matched by the given parser. Boolean @not@
 -- for parsers.
 anythingBut :: Parser String -> Parser String
-anythingBut p = try (anyChar `manyTill` p) <|> many anyChar
+anythingBut p = try (anyChar `manyTill` lookAhead p) <|> many anyChar
 
 -- Match anything between Chars @open@ and @close@, but not nothing.
 anyBetweenChars :: Char -> Char -> Parser String
