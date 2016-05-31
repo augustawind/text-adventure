@@ -7,6 +7,10 @@ main = run myAdventure myGameState
 myGameState :: GameState
 myGameState = defaultGameState { getLineChar = '~' }
 
+-- Custom game over.
+gameOver :: Nexus
+gameOver = EndGame "Game over!"
+
 -- Adventure:
 myAdventure :: Adventure
 myAdventure =
@@ -15,14 +19,12 @@ myAdventure =
          ,Prompt "name" [] "What is your name?"
          ,Print "Hello, %(name)! Your adventure begins..."
          ,Pause
-         ,HR
-         ,Print "Which direction will you go?"]
-    $dispatcher$
+         ,HR]
+    $ ask "Which direction will you go?" $
         [("left",
            Node [PrintLines ["You went left."
-                            ,"You see a strange object."
-                            ,"Do you pick it up?"]]
-           $dispatcher$
+                            ,"You see a strange object."]]
+           $ ask "Do you pick it up?" $
                [("yes",
                    Node [Print ("You pick it up and instantly " ++
                                 "attain enlightenment. You win!")]
@@ -31,9 +33,8 @@ myAdventure =
                ,("no",
                    Node [Print ("Your skepticism precedes you. " ++
                                 "You turn to leave the object behind " ++
-                                "and you see a treasure chest apparate out of thin " ++
-                                "air. Do you wish to open it?")]
-                   $dispatcher$
+                                "and you see a treasure chest apparate out of thin air.")]
+                   $ ask "Do you wish to open it?" $
                        [("yes",
                            Node [Print "You found the treasure! You win!"] gameOver)
 

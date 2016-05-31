@@ -3,12 +3,11 @@ module TextAdventure
     ( GameAction
     , GameState(..)
     , Adventure(..)
-    , Dispatcher
+    , Nexus(..)
     , Output(..)
     , Vars
     -- | Type constructors.
-    , dispatcher
-    , gameOver
+    , ask
     , defaultGameState
     -- | Execution.
     , run
@@ -56,13 +55,16 @@ data GameState = GameState
 
 -- | An adventure game.
 -- This is a recursive tree structure where each Node has an arbitrary amount
--- of branches corresponding with each path the game can take at that point.
--- The Node itself represents a series of @Output@s as a list.
-data Adventure = Node [Output] Dispatcher
+-- of branches corresponding with each path the game can take at that point
+-- (@Nexus@). The Node itself represents a series of @Output@s as a list.
+data Adventure = Node [Output] Nexus
     deriving (Show, Read, Eq)
 
--- | Type alias for a Map of choices to @Adventure@s. See @Adventure@.
-type Dispatcher = Map.Map String Adventure
+-- | A Map of choices to @Adventure@s with a corresponding prompt message,
+-- or a game over with a game over message. See @Adventure@.
+data Nexus = Dispatch String (Map.Map String Adventure)
+           | EndGame String
+           deriving (Show, Read, Eq)
 
 -- | Represents game output, such as printing a string, prompting for an answer,
 -- or pausing the game.
@@ -79,13 +81,9 @@ type Vars = Map.Map Var String
 -- | Semantic alias for a variable name.
 type Var = String
 
--- | Semantic alias for Map.fromList.
-dispatcher :: [(String, Adventure)] -> Dispatcher
-dispatcher = Map.fromList
-
--- | Semantic alias for Map.empty. Used to end the game on a particular @Node@.
-gameOver :: Dispatcher
-gameOver = Map.empty
+-- | Smart constructor for a Dispatch Nexus.
+ask :: String -> [(String, Adventure)] -> Nexus
+ask msg assoc = Dispatch msg (Map.fromList assoc)
 
 -- | Default game state.
 defaultGameState :: GameState
@@ -105,25 +103,20 @@ run adventure gameState = void $ runStateT (play adventure) gameState
 
 -- | Convert an @Adventure@ to a @GameAction@.
 play :: Adventure -> GameAction ()
-play (Node outputs paths) = mapM_ toAction outputs >> next
-    where
-        next = if Map.null paths
-                  then printGameOver 
-                  else dispatch paths
+play (Node outputs disp) = mapM_ toAction outputs >> dispatch disp
 
--- | Given a @Dispatcher@ Map, prompt for an answer and then @play@ the
--- corresponding @Adventure@. Retry on invalid input.
-dispatch :: Dispatcher -> GameAction ()
-dispatch paths = do
+-- | Given a @Dispatch@ @Nexus@, prompt for an answer and then @play@ the
+-- corresponding @Adventure@, retrying on invalid input. End the game
+-- with a message given an @EndGame@ @Nexus@.
+dispatch :: Nexus -> GameAction ()
+dispatch (EndGame msg) = printWrap_ msg
+dispatch this@(Dispatch msg paths) = do
     let paths' = Map.mapKeys normalize paths
+    printWrap msg
     choice <- cmdPrompt_ (Map.keys paths')
     case Map.lookup choice paths' of
-      Nothing        -> retry (dispatch paths)
+      Nothing        -> retry (dispatch this)
       Just adventure -> play adventure
-
--- Print a game over message.
-printGameOver :: GameAction ()
-printGameOver = printWrap_ "Game over!"
 
 -- | Convert an @Output@ to a @GameAction@.
 toAction :: Output -> GameAction ()
