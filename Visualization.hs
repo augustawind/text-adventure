@@ -46,7 +46,7 @@ visualizeVerbose = mapM_ putStrLn . lines . showAdventureVerbose 0
 showAdventureVerbose :: Int -> Adventure -> String
 showAdventureVerbose indentLevel (Node output nexus) =
     case nexus of
-      EndGame msg -> formatOutput indentLevel output
+      EndGame msg        -> formatOutput indentLevel output
       Dispatch msg paths -> formatOutput indentLevel output ++
                                 Map.foldlWithKey foldingFunction "" paths
     where
