@@ -140,9 +140,11 @@ toAction output = case output of
                     BlankLine -> liftIO blankLine
                     Pause -> pause
 
--- | Given a variable name and a message, print the message and then @prompt@
--- for an answer, updating the @getVars@ attribute of the current @GameState@
--- with the result. Retry when no input is given.
+-- | Given a variable name, a list of choices, and a message, print the message
+-- and then prompt for an answer updating the @getVars@ attribute of the
+-- current @GameState@ with the result. If choices is an empty list,
+-- use @prompt_@ and retry on no input. If some choices are given, use
+-- @cmdPrompt_@ and retry on invalid input.
 runPrompt :: Var -> [String] -> String -> GameAction ()
 runPrompt var choices str = do
     answer <- if null choices
