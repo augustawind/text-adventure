@@ -21,13 +21,13 @@ myAdventure =
          ,Pause
          ,HR]
 
-    $ nexus "Which direction will you go?" $
+    $ dispatcher "Which direction will you go?" $
 
         [("left",
            Node [PrintLines ["You went left."
                             ,"You see a strange object."]]
 
-           $ nexus "Do you pick it up?" $
+           $ dispatcher "Do you pick it up?" $
 
                [("yes",
                    Node [Print ("You pick it up and instantly \ 
@@ -39,7 +39,7 @@ myAdventure =
                                 \You turn to leave the object behind \
                                 \and you see a treasure chest apparate out of thin air.")]
 
-                   $ nexus "Do you wish to open it?" $
+                   $ dispatcher "Do you wish to open it?" $
 
                        [("yes",
                            Node [Print "You found the treasure! You win!"] gameOver)

@@ -7,7 +7,7 @@ module TextAdventure
     , Nexus(..)
     , Output(..)
     -- | Type constructors.
-    , nexus
+    , dispatcher
     , defaultOptions
     , defaultGameState
     -- | Execution.
@@ -79,8 +79,8 @@ data Output = Print String
             deriving (Show, Read, Eq)
 
 -- | Smart constructor for a Dispatch Nexus.
-nexus :: String -> [(String, Adventure)] -> Nexus
-nexus msg assoc = Dispatch msg (Map.fromList assoc)
+dispatcher :: String -> [(String, Adventure)] -> Nexus
+dispatcher msg assoc = Dispatch msg (Map.fromList assoc)
 
 -- | Default options.
 defaultOptions :: Options
