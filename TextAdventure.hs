@@ -28,7 +28,7 @@ module TextAdventure
     ) where
 
 import Control.Monad (void)
-import Control.Monad.State (StateT, runStateT, get, put, lift, liftIO)
+import Control.Monad.State (StateT, runStateT, get, put, liftIO)
 import Control.Monad.Reader (ReaderT, runReaderT, asks)
 import Data.List (intercalate)
 import qualified Data.Map as Map
@@ -164,7 +164,7 @@ cmdPrompt_ cs = cmdPrompt cs >>= \x -> blankLine >> return x
 -- | Print something then prompt for input.
 prompt :: String -> GameAction String
 prompt message = do
-    vars <- lift get
+    vars <- get
     promptChars <- asks getPromptChars
     printWrap message
     liftIO $ do
@@ -205,7 +205,7 @@ printLines_ xs = printLines xs >> blankLine
 printWrap :: String -> GameAction ()
 printWrap str = do
     textWidth <- asks getTextWidth
-    vars <- lift get
+    vars <- get
     let eitherStr = format str vars
         errorFunc e = error $ "Error: " ++ e
         newStr = either errorFunc id eitherStr
