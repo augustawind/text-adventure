@@ -1,5 +1,5 @@
 module Visualization 
-    ( visualize,
+    ( visualize
     , visualizeVerbose
     ) where
 
