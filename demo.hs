@@ -1,11 +1,11 @@
 import TextAdventure
 
 main :: IO ()
-main = run myAdventure myGameState
+main = run myAdventure myOptions defaultGameState
 
--- Game state:
-myGameState :: GameState
-myGameState = defaultGameState { getLineChar = '~' }
+-- Options:
+myOptions :: Options
+myOptions = defaultOptions { getLineChar = '~' }
 
 -- Custom game over.
 gameOver :: Nexus
@@ -21,13 +21,13 @@ myAdventure =
          ,Pause
          ,HR]
 
-    $ ask "Which direction will you go?" $
+    $ nexus "Which direction will you go?" $
 
         [("left",
            Node [PrintLines ["You went left."
                             ,"You see a strange object."]]
 
-           $ ask "Do you pick it up?" $
+           $ nexus "Do you pick it up?" $
 
                [("yes",
                    Node [Print ("You pick it up and instantly \ 
@@ -39,7 +39,7 @@ myAdventure =
                                 \You turn to leave the object behind \
                                 \and you see a treasure chest apparate out of thin air.")]
 
-                   $ ask "Do you wish to open it?" $
+                   $ nexus "Do you wish to open it?" $
 
                        [("yes",
                            Node [Print "You found the treasure! You win!"] gameOver)
