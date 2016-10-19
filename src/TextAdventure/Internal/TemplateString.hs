@@ -1,4 +1,4 @@
-module TemplateString
+module TextAdventure.Internal.TemplateString
     ( (-%-)
     , format
     ) where
@@ -20,7 +20,7 @@ str -%- vars = format str vars
 -- a name doesn't exist in the Map.
 format :: String -> Map.Map String String -> Either String String
 format ""  _    = Right ""
-format str vars = foldM f "" (parseTemplate str) 
+format str vars = foldM f "" (parseTemplate str)
     where
         f acc (plainText, "") = Right $ acc ++ plainText
         f acc (plainText, var) =

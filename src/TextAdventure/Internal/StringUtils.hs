@@ -1,4 +1,4 @@
-module StringUtils
+module TextAdventure.Internal.StringUtils
     ( wordWrap
     , normalize
     , strip
@@ -26,7 +26,7 @@ wordWrap width str
 -- half of the split in a 2-tuple.
 splitAtWith :: (a -> Bool) -> Int -> [a] -> ([a], [a])
 splitAtWith p width xs = (first, rest)
-    where 
+    where
         first = case dropWhileEnd (not . p) chunk of
                   []   -> chunk
                   ys   -> init ys
