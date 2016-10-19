@@ -7,7 +7,7 @@ import Data.List (intercalate)
 import qualified Data.Map as Map
 
 import TextAdventure (Adventure(..), Output(..), Nexus(..))
-import StringUtils (wordWrap)
+import TextUtils (wordWrap)
 
 --------------------------------------------------------------------------------
 --  Concise visualization.

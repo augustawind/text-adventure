@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module TextAdventure
     -- | Data types.
     ( GameAction
@@ -27,14 +28,20 @@ module TextAdventure
     , hr, hr_, blankLine
     ) where
 
-import           Control.Monad        (void)
-import           Control.Monad.Reader (ReaderT, asks, runReaderT)
-import           Control.Monad.State  (StateT, get, liftIO, put, runStateT)
-import           Data.List            (intercalate)
-import qualified Data.Map             as Map
+import           Control.Monad                         (void)
+import           Control.Monad.Reader                  (ReaderT, asks,
+                                                        runReaderT)
+import           Control.Monad.State                   (StateT, get, liftIO,
+                                                        put, runStateT)
+import           Data.List                             (intercalate)
+import           Data.Map                              (Map)
+import qualified Data.Map                              as Map
+import           Data.Text                             (Text, append, cons)
+import qualified Data.Text                             as T
+import qualified Data.Text.IO                          as IO
 
-import           TextAdventure.Internal.StringUtils          (normalize, strip, wordWrap)
-import           TextAdventure.Internal.TemplateString       (format)
+import           TextAdventure.Internal.TemplateString (format)
+import           TextAdventure.Internal.TextUtils      (normalize, wordWrap)
 
 
 --------------------------------------------------------------------------------
@@ -48,17 +55,17 @@ type GameAction a =
 
 -- | A mapping of the current game state.
 type GameState =
-    Map.Map String String
+    Map Text Text
 
 
 -- | A record of fixed display options.
 data Options = Options
     -- | The current prompt characters, such as ">> ".
-    { getPromptChars :: String
+    { getPromptChars :: Text
     -- | The current text width to wrap to. This is unlikely to change.
     , getTextWidth   :: Int
     -- | The current line character. Used for drawing a horizontal rule with @HR@.
-    , getLineChar    :: Char
+    , getLineChars   :: Text
 
     } deriving (Show, Eq)
 
@@ -75,17 +82,17 @@ data Adventure =
 -- | A Map of choices to @Adventure@s with a corresponding prompt message,
 -- or a game over with a game over message. See @Adventure@.
 data Nexus
-    = Dispatch String (Map.Map String Adventure)
-    | EndGame String
+    = Dispatch Text (Map Text Adventure)
+    | EndGame Text
     deriving (Show, Read, Eq)
 
 
 -- | Represents game output, such as printing a string, prompting for an answer,
 -- or pausing the game.
 data Output
-    = Print String
-    | PrintLines [String]
-    | Prompt String [String] String
+    = Print Text
+    | PrintLines [Text]
+    | Prompt Text [Text] Text
     | HR
     | BlankLine
     | Pause
@@ -93,7 +100,7 @@ data Output
 
 
 -- | Smart constructor for a Dispatch Nexus.
-dispatcher :: String -> [(String, Adventure)] -> Nexus
+dispatcher :: Text -> [(Text, Adventure)] -> Nexus
 dispatcher msg assoc =
     Dispatch msg (Map.fromList assoc)
 
@@ -103,7 +110,7 @@ defaultOptions :: Options
 defaultOptions = Options
     { getPromptChars = ">> "
     , getTextWidth = 78
-    , getLineChar = '-'
+    , getLineChars = "-"
     }
 
 
@@ -179,14 +186,14 @@ toAction output =
 -- current @GameState@ with the result. If choices is an empty list,
 -- use @prompt_@ and retry on no input. If some choices are given, use
 -- @cmdPrompt_@ and retry on invalid input.
-runPrompt :: String -> [String] -> String -> GameAction ()
+runPrompt :: Text -> [Text] -> Text -> GameAction ()
 runPrompt var choices str = do
     answer <-
         if null choices
             then prompt_ str
             else printWrap str >> cmdPrompt_ choices
 
-    if null answer || (not (null choices) && (answer `notElem` choices))
+    if T.null answer || (not (null choices) && (answer `notElem` choices))
         then retry $ runPrompt var choices str
         else do
             vars <- get
@@ -196,27 +203,27 @@ runPrompt var choices str = do
 
 -- | Like @prompt@, but prints a given list of possible choices and prints
 -- them, then prompts for a result, normalizing the input with @normalize@.
-cmdPrompt :: [String] -> GameAction String
+cmdPrompt :: [Text] -> GameAction Text
 cmdPrompt choices = do
     promptChars <-
         asks getPromptChars
 
     liftIO $ do
-        let choicesStr = "(" ++ intercalate ", " choices ++ ")"
-        putStr $ choicesStr ++ (' ' : promptChars)
+        let choicesStr = "(" `append` T.intercalate ", " choices `append` ")"
+        IO.putStr $ choicesStr `append` (' ' `cons` promptChars)
 
-        choice <- getLine
+        choice <- IO.getLine
         return $ normalize choice
 
 
 -- | @cmdPrompt@ with a blank line added to the end.
-cmdPrompt_ :: [String] -> GameAction String
+cmdPrompt_ :: [Text] -> GameAction Text
 cmdPrompt_ cs =
     cmdPrompt cs >>= \x -> blankLine >> return x
 
 
 -- | Print something then prompt for input.
-prompt :: String -> GameAction String
+prompt :: Text -> GameAction Text
 prompt message = do
     vars <- get
     promptChars <- asks getPromptChars
@@ -224,12 +231,12 @@ prompt message = do
     printWrap message
 
     liftIO $ do
-        putStr promptChars
-        fmap strip getLine
+        IO.putStr promptChars
+        fmap T.strip IO.getLine
 
 
 -- | @prompt@ with a blank line added to the end.
-prompt_ :: String -> GameAction String
+prompt_ :: Text -> GameAction Text
 prompt_ msg =
     prompt msg >>= \x -> blankLine >> return x
 
@@ -237,14 +244,14 @@ prompt_ msg =
 -- | Print a "try again" message and re-execute the given @GameAction@.
 retry :: GameAction () -> GameAction ()
 retry action = do
-    liftIO $ putStrLn "Invalid input. Please try again."
+    liftIO $ IO.putStrLn "Invalid input. Please try again."
     blankLine >> action
 
 
 -- | Pause execution and wait for a keypress to continue.
 pause :: GameAction ()
 pause =
-    liftIO $ putStr "(Press <Enter> to continue...)" >> void getLine
+    liftIO $ IO.putStr "(Press <Enter> to continue...)" >> void IO.getLine
 
 
 -- | @pause@ with a blank line added to the end.
@@ -257,33 +264,36 @@ pause_ =
 --  Output.
 
 
--- | Print a list of Strings line by line, wrapping each line to the given width.
-printLines :: [String] -> GameAction ()
+-- | Print a list of Texts line by line, wrapping each line to the given width.
+printLines :: [Text] -> GameAction ()
 printLines =
     mapM_ printWrap
 
 
 -- @printLines@ with a blank line added to the end.
-printLines_ :: [String] -> GameAction ()
+printLines_ :: [Text] -> GameAction ()
 printLines_ xs =
     printLines xs >> blankLine
 
 
--- | Print a String, wrapping its text to the given width.
-printWrap :: String -> GameAction ()
-printWrap str = do
+-- | Print a Text, wrapping its text to the given width.
+printWrap :: Text -> GameAction ()
+printWrap txt = do
     textWidth <- asks getTextWidth
     vars <- get
 
-    let eitherStr = format str vars
+    -- TODO: make this more efficient
+    let strTxt = T.unpack txt
+        strMap = Map.mapKeys T.unpack . Map.map T.unpack $ vars
+        eitherStr = T.pack <$> format strTxt strMap
         errorFunc e = error $ "Error: " ++ e
         newStr = either errorFunc id eitherStr
 
-    liftIO . putStrLn . wordWrap textWidth $ newStr
+    liftIO . IO.putStrLn . wordWrap textWidth $ newStr
 
 
 -- | @printWrap@ with a blank line added to the end.
-printWrap_ :: String -> GameAction ()
+printWrap_ :: Text -> GameAction ()
 printWrap_ str =
     printWrap str >> blankLine
 
@@ -292,8 +302,8 @@ printWrap_ str =
 hr :: GameAction ()
 hr = do
     width <- asks getTextWidth
-    char <- asks getLineChar
-    liftIO $ putStrLn (replicate width char)
+    chars <- asks getLineChars
+    liftIO $ IO.putStrLn (T.replicate width chars)
 
 
 -- | @hr@ with a blank line added to the end.
@@ -305,4 +315,4 @@ hr_ =
 -- | Print a blank line.
 blankLine :: GameAction ()
 blankLine =
-    liftIO $ putChar '\n'
+    liftIO $ IO.putStr "\n"

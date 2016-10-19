@@ -1,11 +1,14 @@
-import TextAdventure
+{-# LANGUAGE OverloadedStrings #-}
+module Main where
+
+import           TextAdventure
 
 main :: IO ()
 main = run myAdventure myOptions defaultGameState
 
 -- Options:
 myOptions :: Options
-myOptions = defaultOptions { getLineChar = '~' }
+myOptions = defaultOptions { getLineChars = "~" }
 
 -- Custom game over.
 gameOver :: Nexus
@@ -21,25 +24,25 @@ myAdventure =
          ,Pause
          ,HR]
 
-    $ dispatcher "Which direction will you go?" $
+    $ dispatcher "Which direction will you go?"
 
         [("left",
            Node [PrintLines ["You went left."
                             ,"You see a strange object."]]
 
-           $ dispatcher "Do you pick it up?" $
+           $ dispatcher "Do you pick it up?"
 
                [("yes",
-                   Node [Print ("You pick it up and instantly \ 
-                                \attain enlightenment. You win!")]
+                   Node [Print "You pick it up and instantly \
+                                \attain enlightenment. You win!"]
                    gameOver
                 )
                ,("no",
-                   Node [Print ("Your skepticism precedes you. \
+                   Node [Print "Your skepticism precedes you. \
                                 \You turn to leave the object behind \
-                                \and you see a treasure chest apparate out of thin air.")]
+                                \and you see a treasure chest apparate out of thin air."]
 
-                   $ dispatcher "Do you wish to open it?" $
+                   $ dispatcher "Do you wish to open it?"
 
                        [("yes",
                            Node [Print "You found the treasure! You win!"] gameOver)

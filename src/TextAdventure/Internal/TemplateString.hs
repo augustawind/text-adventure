@@ -3,12 +3,13 @@ module TextAdventure.Internal.TemplateString
     , format
     ) where
 
-import Control.Monad (foldM)
-import qualified Data.Map as Map
+import           Control.Monad                 (foldM)
+import qualified Data.Map                      as Map
 
-import Text.ParserCombinators.Parsec (Parser, parse, try, lookAhead, eof,
-                                      anyChar, char, string, many, many1,
-                                      noneOf, manyTill, between, (<|>))
+import           Text.ParserCombinators.Parsec (Parser, anyChar, between, char,
+                                                eof, lookAhead, many, many1,
+                                                manyTill, noneOf, parse, string,
+                                                try, (<|>))
 
 -- | @format@ as an infix operator.
 infixl 4 -%-
